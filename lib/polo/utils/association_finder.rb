@@ -1,6 +1,5 @@
 module Polo::Utils
   class AssociationFinder
-
     attr_reader :entry_point, :max_level, :include_polymorphic, :blacklist
 
     def self.run(*args)
@@ -33,7 +32,7 @@ module Polo::Utils
           if include_polymorphic
             node[assoc.name] = {}
           else
-            $stderr.puts "Skipping #{assoc.name} of #{assoc.active_record} (polymorphic)"
+            warn "Skipping #{assoc.name} of #{assoc.active_record} (polymorphic)"
           end
           next
         end
@@ -61,3 +60,4 @@ module Polo::Utils
       root
     end
   end
+end
