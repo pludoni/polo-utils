@@ -16,12 +16,12 @@ gem 'polo-utils', git: 'https://github.com/pludoni/polo-utils.git'
 ## 1. Exporting a model with all associations
 
 
-e.g. create script (e.g. bin/extract_user)
+e.g. create script (e.g. ``bin/extract_user``)
 
 ```ruby
 #!/usr/bin/env ruby
 if ARGV.length == 0
-  $stderr.puts "USAGE: #{__FILE__} [user_id]
+  $stderr.puts "USAGE: #{__FILE__} [user_id]"
   exit 1
 end
 
@@ -32,6 +32,8 @@ require 'polo/utils'
 
 user_id = ARGV[0]
 
+# exports User with the id and ALL associations to a depth of 3 excluding any
+# association named :versions
 sqls = Polo::Utils.extract(User, user_id, max_level: 3, blacklist: [:versions])
 puts sqls
 ```
@@ -52,13 +54,17 @@ For this to work, we need a database snapshot from before the deletion. Locate i
 ```ruby
 require 'polo/utils/restore_from_backup'
 
-# drop/recreate database
 runner = Polo::Utils::RestoreFromBackup.new(temp_table: "tmp_restore_#{Date.today.to_s.gsub('-', '')}")
-runner..recreate_tmp_database!
+# drop/recreate database
+runner.recreate_tmp_database!
+# import specified sql.gz into temp db
 runner.import_dump_into_tmp_database(backup_file: '/var/backup/.../*.sql.gz')
 sql = []
+# connect to temp db with ALL of ActiveRecord::Base
 runner.connect_to_tmp! do
-  # sql = Polo.explore(User, id.to_i, associations)
+  # extract deleted object to restore, with optional associations
+  # sql = Polo.explore(User, id.to_i, associations = [:jobs, :sectors, :people])
+  # ... or use the full dump like before
   sql = Polo::Utils.extract(User, user_id, max_level: 1, blacklist: [:versions])
 end
 sql.each do |statement|
