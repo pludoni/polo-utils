@@ -29,13 +29,20 @@ module Polo::Utils
         next if blacklist.include?(assoc.name)
 
         if assoc.polymorphic?
-          puts "Skipping #{assoc.name} of #{assoc.active_record} (polymorphic)"
-          node[assoc.name] = {} if include_polymorphic
+          # don't descend into polymorphic associations
+          if include_polymorphic
+            node[assoc.name] = {}
+          else
+            $stderr.puts "Skipping #{assoc.name} of #{assoc.active_record} (polymorphic)"
+          end
           next
         end
         other_class = assoc.compute_class assoc.class_name
 
+        # We've already seen this class so probably already exported it!
         if visited.include?(other_class)
+          # ... unless it is a habtm, then we need to include it, too, to get hold of the Join table
+          # but don't descend
           if assoc.is_a?(ActiveRecord::Reflection::HasAndBelongsToManyReflection) and other_class != entry_point
             node[assoc.name] = {}
           end
@@ -46,6 +53,7 @@ module Polo::Utils
         subtree = node[assoc.name] = {}
         next unless level < max_level
 
+        # descend into next level (breadth first)
         other_class.reflect_on_all_associations.each do |new_assoc|
           q << [subtree, new_assoc, level + 1]
         end
